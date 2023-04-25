@@ -1,13 +1,16 @@
-module.exports = errorHandler;
+module.exports = validateRequest;
 
-function errorHandler(err, req, res, next) {
-    switch (true) {
-        case typeof err === 'string':
-            // custom application error
-            const is404 = err.toLowerCase().endsWith('not found');
-            const statusCode = is404 ? 404 : 400;
-            return res.status(statusCode).json({ message: err });
-        default:
-            return res.status(500).json({ message: err.message });
+function validateRequest(req, next, schema) {
+    const options = {
+        abortEarly: false, // include all errors
+        allowUnknown: true, // ignore unknown props
+        stripUnknown: true // remove unknown props
+    };
+    const { error, value } = schema.validate(req.body, options);
+    if (error) {
+        next(`Validation error: ${error.details.map(x => x.message).join(', ')}`);
+    } else {
+        req.body = value;
+        next();
     }
 }
